@@ -166,7 +166,7 @@ namespace SSFWServer
                         extractedData[i] = 0x48;
                 }
 
-                XI5Ticket ticket = new XI5Ticket(ticketBuffer);
+                XI5Ticket ticket = XI5Ticket.ReadFromBytes(ticketBuffer);
 
                 if (ByteUtils.FindBytePattern(ticketBuffer, new byte[] { 0x52, 0x50, 0x43, 0x4E }, 184) != -1)
                 {
@@ -233,7 +233,7 @@ namespace SSFWServer
 
                 if (!string.IsNullOrEmpty(UserNames.Item1) && !SSFWServerConfiguration.SSFWCrossSave) // RPCN confirmed.
                 {
-                    SSFWUserSessionManager.RegisterUser(UserNames.Item1, SessionIDs.Item1!, ResultStrings.Item1!, ticket.OnlineId.Length);
+                    SSFWUserSessionManager.RegisterUser(UserNames.Item1, SessionIDs.Item1!, ResultStrings.Item1!, ticket.Username.Length);
 
                     if (SSFWAccountManagement.AccountExists(UserNames.Item2, SessionIDs.Item2))
                         SSFWAccountManagement.CopyAccountProfile(UserNames.Item2, UserNames.Item1, SessionIDs.Item2, SessionIDs.Item1!, key);
@@ -244,7 +244,7 @@ namespace SSFWServer
                 {
                     IsRPCN = false;
 
-                    SSFWUserSessionManager.RegisterUser(UserNames.Item2, SessionIDs.Item2, ResultStrings.Item2, ticket.OnlineId.Length);
+                    SSFWUserSessionManager.RegisterUser(UserNames.Item2, SessionIDs.Item2, ResultStrings.Item2, ticket.Username.Length);
                 }
 
                 int logoncount = SSFWAccountManagement.ReadOrMigrateAccount(extractedData, IsRPCN ? UserNames.Item1 : UserNames.Item2, IsRPCN ? SessionIDs.Item1 : SessionIDs.Item2, key);
