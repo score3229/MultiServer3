@@ -1,5 +1,9 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace XI5
 {
@@ -13,7 +17,7 @@ namespace XI5
                 Array.Reverse(buffer);
             return BitConverter.ToUInt32(buffer, 0);
         }
-        
+
         public static ulong ReadULong(this Stream stream)
         {
             byte[] buffer = new byte[8];
@@ -31,7 +35,7 @@ namespace XI5
                 Array.Reverse(buffer);
             return BitConverter.ToUInt16(buffer, 0);
         }
-        
+
         public static bool ReadAll(this Stream stream, byte[] buffer, int startIndex, int count)
         {
             if (stream == null)
