@@ -1,16 +1,5 @@
-using Microsoft.VisualBasic;
-using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Crypto.Signers;
-using Org.BouncyCastle.OpenSsl;
 using System;
 using System.Diagnostics;
-
-#if NET6_0_OR_GREATER
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
-
-#endif
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,6 +8,7 @@ using XI5.Reader;
 using XI5.Types;
 using XI5.Types.Parsers;
 using XI5.Verification;
+using CustomLogger;
 
 namespace XI5
 {
@@ -52,7 +42,6 @@ namespace XI5
         public ushort TicketLength { get; set; }
         public TicketDataSection BodySection { get; set; }
 
-        public bool SignedByOfficialRPCN { get { return true; } }
         public string SignatureIdentifier { get; set; }
         public byte[] SignatureData { get; set; }
         public bool Valid { get; protected set; }
@@ -60,7 +49,6 @@ namespace XI5
         // TODO: Use GeneratedRegex, this is not in netstandard yet
         internal static readonly Regex ServiceIdRegex = new Regex("(?<=-)[A-Z0-9]{9}(?=_)", RegexOptions.Compiled);
 
-        [Pure]
         public static XI5Ticket ReadFromBytes(byte[] ticketData)
         {
             using (var ms = new MemoryStream(ticketData))
@@ -100,11 +88,11 @@ namespace XI5
 
                 long actualLength = ticketStream.Length - headerLength;
                 if (ticket.TicketLength != actualLength)
-                    throw new FormatException($"Expected ticket length to be {ticket.TicketLength} bytes, but was {actualLength} bytes.");
+                    throw new FormatException($"[XI5Ticket] - Expected ticket length to be {ticket.TicketLength} bytes, but was {actualLength} bytes.");
 
                 ticket.BodySection = reader.ReadTicketSectionHeader();
                 if (ticket.BodySection.Type != TicketDataSectionType.Body)
-                    throw new FormatException($"Expected first section to be {nameof(TicketDataSectionType.Body)}, but was {ticket.BodySection.Type} ({(int)ticket.BodySection.Type}).");
+                    throw new FormatException($"[XI5Ticket] - Expected first section to be {nameof(TicketDataSectionType.Body)}, but was {ticket.BodySection.Type} ({(int)ticket.BodySection.Type}).");
 
                 // ticket 2.1
                 if (ticket.Version.Major == 2 && ticket.Version.Minor == 1)
@@ -116,19 +104,24 @@ namespace XI5
 
                 // unhandled ticket version
                 else
-                    throw new FormatException($"Unknown/unhandled ticket version {ticket.Version.Major}.{ticket.Version.Minor}.");
+                    throw new FormatException($"[XI5Ticket] - Unknown/unhandled ticket version {ticket.Version}.");
 
                 var footer = reader.ReadTicketSectionHeader();
                 if (footer.Type != TicketDataSectionType.Footer)
-                    throw new FormatException($"Expected last section to be {nameof(TicketDataSectionType.Footer)}, but was {footer.Type} ({(int)footer.Type}).");
+                    throw new FormatException($"[XI5Ticket] - Expected last section to be {nameof(TicketDataSectionType.Footer)}, but was {footer.Type} ({(int)footer.Type}).");
 
                 ticket.SignatureIdentifier = reader.ReadTicketStringData(TicketDataType.Binary);
                 ticket.SignatureData = reader.ReadTicketBinaryData();
             }
 
+            // verify ticket signature
             ITicketSigningKey signingKey = SigningKeyResolver.GetSigningKey(ticket.SignatureIdentifier, ticket.TitleId);
             TicketVerifier ticketVerifier = new TicketVerifier(ticketData, ticket, signingKey);
             ticket.Valid = ticketVerifier.IsTicketValid();
+
+            // ticket invalid
+            if (!ticket.Valid)
+                LoggerAccessor.LogWarn($"[XI5Ticket] - Ticket for {ticket.TitleId} has invalid signature!");
 
             return ticket;
         }
