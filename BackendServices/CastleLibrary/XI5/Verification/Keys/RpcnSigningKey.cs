@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace XI5.Verification.Keys
+﻿namespace XI5.Verification.Keys
 {
     /// <summary>
     /// The public signing key used when RPCS3 clients connect via RPCN.

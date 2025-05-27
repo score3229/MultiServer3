@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace XI5.Verification.Keys
+﻿namespace XI5.Verification.Keys
 {
     /// <summary>
     /// A public signing key used when PS3/PSVita clients connect via official PSN.
