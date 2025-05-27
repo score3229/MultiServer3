@@ -1,10 +1,9 @@
 using CustomLogger;
-using NetworkLibrary.Extension;
-using System.Text;
+using NetHasher;
 using System.Collections.Concurrent;
+using System.Text;
 using WebAPIService.SSFW;
 using XI5;
-using NetHasher;
 
 namespace SSFWServer
 {
@@ -168,19 +167,23 @@ namespace SSFWServer
 
                 XI5Ticket ticket = XI5Ticket.ReadFromBytes(ticketBuffer);
 
-                if (ByteUtils.FindBytePattern(ticketBuffer, new byte[] { 0x52, 0x50, 0x43, 0x4E }, 184) != -1)
+                // invalid ticket
+                if (!ticket.Valid)
                 {
-                    if (SSFWServerConfiguration.ForceOfficialRPCNSignature && !ticket.SignedByOfficialRPCN)
-                    {
-                        LoggerAccessor.LogError($"[SSFW] : User {Encoding.ASCII.GetString(extractedData).Replace("H", string.Empty)} was caught using an invalid RPCN signature!");
-                        return null;
-                    }
-
-                    IsRPCN = true;
-                    LoggerAccessor.LogInfo($"[SSFW] : User {Encoding.ASCII.GetString(extractedData).Replace("H", string.Empty)} logged in and is on RPCN");
+                    LoggerAccessor.LogWarn($"[SSFWLogin] - {ticket.Username} tried to alter their ticket data");
+                    return null;
                 }
+
+                // RPCN
+                if (ticket.SignatureIdentifier == "RPCN")
+                {
+                    IsRPCN = true;
+                    LoggerAccessor.LogInfo($"[SSFWLogin] - {ticket.Username} logged in and is on RPCN");
+                }
+
+                // PSN
                 else
-                    LoggerAccessor.LogInfo($"[SSFW] : {Encoding.ASCII.GetString(extractedData).Replace("H", string.Empty)} logged in and is on PSN");
+                    LoggerAccessor.LogInfo($"[SSFWLogin] - {ticket.Username} logged in and is on PSN");
 
                 (string, string) UserNames = new();
                 (string, string) ResultStrings = new();
