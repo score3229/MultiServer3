@@ -1,30 +1,55 @@
-﻿using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
+﻿using BitConverterExtension;
+using System;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using XI5.Types;
 
 namespace XI5.Reader
 {
     public class TicketReader : BinaryReader
     {
-        public TicketReader(Stream input) : base(input)
-        { }
+        // setup endian converter
+        private static readonly BigEndianBitConverter bigEndian = new();
 
-        #region Big Endian Shenanigans
+        public TicketReader(Stream input) : base(input) { }
 
-        // credit where credit is due: https://stackoverflow.com/a/71048495
+        #region Big Endian Conversion
 
-        public override short ReadInt16() => BinaryPrimitives.ReadInt16BigEndian(ReadBytes(2));
-        public override int ReadInt32() => BinaryPrimitives.ReadInt32BigEndian(ReadBytes(4));
-        public override long ReadInt64() => BinaryPrimitives.ReadInt64BigEndian(ReadBytes(8));
+        public override short ReadInt16()
+        {
+            byte[] bytes = ReadBytes(2);
+            return bigEndian.ToInt16(bytes, 0);
+        }
 
-        public override ushort ReadUInt16() => BinaryPrimitives.ReadUInt16BigEndian(ReadBytes(2));
-        public override uint ReadUInt32() => BinaryPrimitives.ReadUInt32BigEndian(ReadBytes(4));
-        public override ulong ReadUInt64() => BinaryPrimitives.ReadUInt64BigEndian(ReadBytes(8));
+        public override int ReadInt32()
+        {
+            byte[] bytes = ReadBytes(4);
+            return bigEndian.ToInt32(bytes, 0);
+        }
+
+        public override long ReadInt64()
+        {
+            byte[] bytes = ReadBytes(8);
+            return bigEndian.ToInt64(bytes, 0);
+        }
+
+        public override ushort ReadUInt16()
+        {
+            byte[] bytes = ReadBytes(2);
+            return bigEndian.ToUInt16(bytes, 0);
+        }
+
+        public override uint ReadUInt32()
+        {
+            byte[] bytes = ReadBytes(4);
+            return bigEndian.ToUInt32(bytes, 0);
+        }
+
+        public override ulong ReadUInt64()
+        {
+            byte[] bytes = ReadBytes(8);
+            return bigEndian.ToUInt64(bytes, 0);
+        }
 
         #endregion
 
@@ -32,58 +57,8 @@ namespace XI5.Reader
 
         internal ushort ReadTicketHeader()
         {
-            // Ticket header
-            ReadBytes(4); // Header
-            return ReadUInt16(); // Ticket length
-        }
-
-        public void DetermineTicketFormat()
-        {
-            TicketVersion version = ReadTicketVersion();
-            Console.Write($"Ticket version {version.Major}.{version.Minor}");
-            ushort length = ReadTicketHeader();
-            Console.WriteLine($", length is {length} bytes");
-
-            while (this.BaseStream.Position <= length)
-            {
-                DetermineSectionFormat();
-            }
-
-            long unreadBytes = this.BaseStream.Length - this.BaseStream.Position;
-            if (unreadBytes != 0)
-            {
-                Console.WriteLine($"!!! Unread bytes: {unreadBytes} !!!");
-            }
-        }
-
-        private void DetermineSectionFormat()
-        {
-            TicketDataSection section = ReadTicketSectionHeader();
-            Console.WriteLine($"  {section.Type} Section, length is {section.Length} @ offset {section.Position}");
-
-            if (section.Type == TicketDataSectionType.DateOfBirth)
-            {
-                this.BaseStream.Position += section.Length;
-            }
-
-            int endSpot = section.Length + section.Position;
-            while (this.BaseStream.Position <= endSpot)
-            {
-                DetermineData();
-            }
-        }
-
-        private void DetermineData()
-        {
-            TicketData data = ReadTicketData(TicketDataType.Empty);
-            if ((ushort)data.Type >> 8 == 0x30) // if data type starts with section header
-            {
-                this.BaseStream.Position -= sizeof(ushort) * 2; // roll back read from data
-                DetermineSectionFormat(); // read the section
-                return;
-            }
-            this.ReadBytes(data.Length);
-            Console.WriteLine($"    {data.Type}, length is {data.Length}");
+            ReadBytes(4);           // header
+            return ReadUInt16();    // ticket length
         }
 
         internal TicketDataSection ReadTicketSectionHeader()
@@ -92,9 +67,7 @@ namespace XI5.Reader
 
             byte sectionHeader = this.ReadByte();
             if (sectionHeader != 0x30)
-            {
-                throw new FormatException($"Expected 0x30 for section header, was {sectionHeader}. Offset is {this.BaseStream.Position}");
-            }
+                throw new FormatException($"[XI5Ticket] - Expected 0x30 for section header, was {sectionHeader}. Offset is {this.BaseStream.Position}");
 
             TicketDataSectionType type = (TicketDataSectionType)this.ReadByte();
             ushort length = this.ReadUInt16();
@@ -106,7 +79,7 @@ namespace XI5.Reader
         {
             TicketData data = new TicketData((TicketDataType)ReadUInt16(), ReadUInt16());
             if (data.Type != expectedType && expectedType != TicketDataType.Empty)
-                throw new FormatException($"Expected data type to be {expectedType}, was really {data.Type} ({(int)data.Type})");
+                throw new FormatException($"[XI5Ticket] - Expected data type to be {expectedType}, was really {data.Type} ({(int)data.Type})");
 
             return data;
         }
