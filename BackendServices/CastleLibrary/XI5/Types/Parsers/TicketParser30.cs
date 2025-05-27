@@ -30,10 +30,9 @@ namespace XI5.Types.Parsers
                     $"was really {header.Type} ({(int)header.Type})");
             }
 
-            reader.ReadUInt32(); // Birthdate
-            reader.SkipTicketEmptyData(2); // Padding?
+            reader.ReadUInt32();                // d.o.b
+            reader.SkipTicketEmptyData(2);
 
-            Console.WriteLine(reader.BaseStream.Position);
             header = reader.ReadTicketSectionHeader();
             if (header.Type != TicketDataSectionType.Age)
             {
