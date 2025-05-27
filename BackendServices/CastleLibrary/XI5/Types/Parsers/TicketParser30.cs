@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using XI5.Reader;
 
 namespace XI5.Types.Parsers
@@ -30,7 +26,7 @@ namespace XI5.Types.Parsers
             TicketDataSection header = reader.ReadTicketSectionHeader();
             if (header.Type != TicketDataSectionType.DateOfBirth)
             {
-                throw new FormatException($"Expected section to be {nameof(TicketDataSectionType.DateOfBirth)}, " +
+                throw new FormatException($"[XI5Ticket] - Expected section to be {nameof(TicketDataSectionType.DateOfBirth)}, " +
                     $"was really {header.Type} ({(int)header.Type})");
             }
 
@@ -41,7 +37,7 @@ namespace XI5.Types.Parsers
             header = reader.ReadTicketSectionHeader();
             if (header.Type != TicketDataSectionType.Age)
             {
-                throw new FormatException($"Expected section to be {nameof(TicketDataSectionType.Age)}, " +
+                throw new FormatException($"[XI5Ticket] - Expected section to be {nameof(TicketDataSectionType.Age)}, " +
                                           $"was really {header.Type} ({(int)header.Type})");
             }
 
