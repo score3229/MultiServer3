@@ -4,15 +4,14 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace XI5.Verification
 {
     public class TicketVerifier
     {
+        // credit: LittleBigRefresh team
+
         private readonly TicketSignatureMessageType _messageType;
         private readonly XI5Ticket _ticket;
         private readonly byte[] _ticketData;
